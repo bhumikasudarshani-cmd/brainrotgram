@@ -75,7 +75,7 @@ class ProfileScreen extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 48,
                     height: 48,
                     child: Stack(
@@ -85,10 +85,10 @@ class ProfileScreen extends ConsumerWidget {
                           value: 0.6, // placeholder — 3 of 5
                           strokeWidth: 4,
                           backgroundColor: AppColors.divider,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
+                          valueColor: AlwaysStoppedAnimation<Color>(
                               AppColors.purpleAccent),
                         ),
-                        const Text(
+                        Text(
                           '3',
                           style: TextStyle(
                             fontSize: 16,
@@ -124,16 +124,16 @@ class ProfileScreen extends ConsumerWidget {
             length: 2,
             child: Column(
               children: [
-                TabBar(
+                const TabBar(
                   labelColor: AppColors.plum,
                   unselectedLabelColor: AppColors.textSecondary,
                   indicatorColor: AppColors.purpleAccent,
                   indicatorSize: TabBarIndicatorSize.label,
-                  labelStyle: const TextStyle(
+                  labelStyle: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
-                  tabs: const [
+                  tabs: [
                     Tab(text: 'Videos'),
                     Tab(text: 'Saved'),
                   ],
@@ -205,7 +205,7 @@ class ProfileScreen extends ConsumerWidget {
                   context: context,
                   builder: (ctx) => AlertDialog(
                     title: const Text('Sign out?'),
-                    content: const Text('You'll need to sign in again.'),
+                    content: const Text("You'll need to sign in again."),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(ctx).pop(false),

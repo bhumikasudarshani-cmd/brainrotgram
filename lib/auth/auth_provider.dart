@@ -101,14 +101,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         ),
       );
 
-      if (result != null) {
-        await _handleTokenResponse(result);
-      } else {
-        state = state.copyWith(
-          status: AuthStatus.unauthenticated,
-          isLoading: false,
-        );
-      }
+      await _handleTokenResponse(result);
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
@@ -136,10 +129,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         ),
       );
 
-      if (result != null) {
-        await _handleTokenResponse(result);
-        return true;
-      }
+      await _handleTokenResponse(result);
+      return true;
     } catch (_) {
       // Refresh failed — force sign out
     }
