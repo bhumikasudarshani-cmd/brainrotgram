@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -102,7 +103,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
 
       await _handleTokenResponse(result);
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('Auth sign-in error: $e\n$stack');
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
         isLoading: false,

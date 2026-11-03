@@ -31,6 +31,8 @@ migrate_working_dir/
 
 # Android
 android/.gradle
+android/build/
+android/app/build/
 android/captures/
 android/gradlew
 android/gradlew.bat

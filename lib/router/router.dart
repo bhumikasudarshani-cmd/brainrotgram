@@ -19,18 +19,28 @@ final _studioNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'studio');
 final _sessionsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'sessions');
 final _profileNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'profile');
 
-/// Router provider — depends on auth state for the redirect guard.
+/// Bridge to convert Riverpod auth state changes into a [Listenable] for [GoRouter].
+class _AuthRefreshListenable extends ChangeNotifier {
+  _AuthRefreshListenable(Ref ref) {
+    ref.listen<AuthState>(authProvider, (_, __) => notifyListeners());
+  }
+}
+
+/// Router provider — uses [refreshListenable] for auth redirects without recreating GoRouter.
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final refreshListenable = _AuthRefreshListenable(ref);
+  ref.onDispose(refreshListenable.dispose);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/home',
     debugLogDiagnostics: true,
+    refreshListenable: refreshListenable,
 
     // --- Auth redirect guard ---
     // While signed out, only /signin is reachable.
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final isAuthenticated = authState.status == AuthStatus.authenticated;
       final isSigningIn = state.matchedLocation == '/signin';
       final isLoading = authState.status == AuthStatus.unknown;
