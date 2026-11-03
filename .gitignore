@@ -38,8 +38,12 @@ android/gradlew
 android/gradlew.bat
 android/local.properties
 android/GeneratedPluginRegistrant.java
-android/key.properties
+key.properties
+**/key.properties
 *.jks
+**/*.jks
+*.keystore
+**/*.keystore
 
 # iOS
 ios/
