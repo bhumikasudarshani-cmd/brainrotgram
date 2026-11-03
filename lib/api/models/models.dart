@@ -16,6 +16,7 @@ class VideoJob {
   final DateTime createdAt;
   final String? reviewState;
   final int? questionCount;
+  final String? error;
 
   const VideoJob({
     required this.jobId,
@@ -34,6 +35,7 @@ class VideoJob {
     required this.createdAt,
     this.reviewState,
     this.questionCount,
+    this.error,
   });
 
   factory VideoJob.fromJson(Map<String, dynamic> json) {
@@ -56,6 +58,7 @@ class VideoJob {
       createdAt: DateTime.parse(json['createdAt'] as String),
       reviewState: json['reviewState'] as String?,
       questionCount: json['questionCount'] as int?,
+      error: json['error'] as String?,
     );
   }
 
@@ -97,11 +100,11 @@ class UserQuota {
   });
 
   factory UserQuota.fromJson(Map<String, dynamic> json) {
-    final quota = json['quota'] as Map<String, dynamic>;
+    final quota = json['quota'] as Map<String, dynamic>? ?? json;
     return UserQuota(
-      used: quota['used'] as int,
-      limit: quota['limit'] as int,
-      remaining: quota['remaining'] as int,
+      used: quota['used'] as int? ?? 0,
+      limit: quota['limit'] as int? ?? 5,
+      remaining: quota['remaining'] as int? ?? 0,
     );
   }
 }
@@ -197,9 +200,90 @@ class ApiError {
 
   factory ApiError.fromJson(Map<String, dynamic> json) {
     return ApiError(
-      code: json['code'] as String,
-      message: json['message'] as String,
+      code: json['code'] as String? ?? 'ERROR',
+      message: json['message'] as String? ?? 'An error occurred.',
       retryable: json['retryable'] as bool? ?? false,
+    );
+  }
+}
+
+/// Studio format from GET /studio/config.
+class StudioFormat {
+  final String id;
+  final String name;
+  final String description;
+  final int speakers;
+  final String? visuals;
+  final bool ready;
+
+  const StudioFormat({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.speakers,
+    this.visuals,
+    this.ready = true,
+  });
+
+  factory StudioFormat.fromJson(Map<String, dynamic> json) {
+    return StudioFormat(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      speakers: json['speakers'] as int? ?? 1,
+      visuals: json['visuals'] as String?,
+      ready: json['ready'] as bool? ?? true,
+    );
+  }
+}
+
+/// Studio character from GET /studio/config.
+class StudioCharacter {
+  final String id;
+  final String name;
+  final String? imageUrl;
+  final bool voiceReady;
+
+  const StudioCharacter({
+    required this.id,
+    required this.name,
+    this.imageUrl,
+    this.voiceReady = true,
+  });
+
+  String get pictureUrl =>
+      'https://d3sk6lwsh4ufyv.cloudfront.net/characters/$id.png';
+
+  factory StudioCharacter.fromJson(Map<String, dynamic> json) {
+    return StudioCharacter(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      imageUrl: json['imageUrl'] as String?,
+      voiceReady: json['voiceReady'] as bool? ?? true,
+    );
+  }
+}
+
+/// Full studio config data from GET /studio/config.
+class StudioConfigData {
+  final List<StudioFormat> formats;
+  final List<StudioCharacter> characters;
+
+  const StudioConfigData({
+    required this.formats,
+    required this.characters,
+  });
+
+  factory StudioConfigData.fromJson(Map<String, dynamic> json) {
+    final rawFormats = json['formats'] as List? ?? [];
+    final rawChars = json['characters'] as List? ?? [];
+    return StudioConfigData(
+      formats: rawFormats
+          .map((f) => StudioFormat.fromJson(f as Map<String, dynamic>))
+          .toList(),
+      characters: rawChars
+          .map((c) => StudioCharacter.fromJson(c as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

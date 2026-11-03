@@ -105,16 +105,25 @@ class ApiService {
     required String format,
     String language = 'en',
     int durationSeconds = 60,
+    int quizCount = 2,
+    String? cast,
+    Map<String, String>? participants,
+    String? narrator,
     String? requestId,
   }) async {
     final reqId = requestId ?? const Uuid().v4();
-    final body = {
+    final body = <String, dynamic>{
       'requestId': reqId,
       'prompt': prompt,
       'format': format,
       'language': language,
       'durationSeconds': durationSeconds,
+      'quizCount': quizCount,
     };
+    if (cast != null) body['cast'] = cast;
+    if (participants != null) body['participants'] = participants;
+    if (narrator != null) body['narrator'] = narrator;
+
     final response = await _dio.post('/videos', data: body);
     return response.data as Map<String, dynamic>;
   }
@@ -124,12 +133,21 @@ class ApiService {
     required String prompt,
     required String format,
     String language = 'en',
+    int quizCount = 2,
+    String? cast,
+    Map<String, String>? participants,
+    String? narrator,
   }) async {
-    final body = {
+    final body = <String, dynamic>{
       'prompt': prompt,
       'format': format,
       'language': language,
+      'quizCount': quizCount,
     };
+    if (cast != null) body['cast'] = cast;
+    if (participants != null) body['participants'] = participants;
+    if (narrator != null) body['narrator'] = narrator;
+
     final response = await _dio.post('/videos/validate', data: body);
     return response.data as Map<String, dynamic>;
   }

@@ -96,7 +96,12 @@ class _VideoReelItemState extends ConsumerState<VideoReelItem>
 
   Future<void> _initializePlayer(String? url) async {
     if (url == null || url.isEmpty) {
-      if (mounted) setState(() => _hasError = true);
+      if (!_retriedOnce) {
+        _retriedOnce = true;
+        _retryWithFreshUrl();
+      } else {
+        if (mounted) setState(() => _hasError = true);
+      }
       return;
     }
 

@@ -169,43 +169,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Positioned(
               top: MediaQuery.of(context).padding.top + 10,
               left: 16,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.plum.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: AppColors.purpleAccent.withValues(alpha: 0.5)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.yellow,
+              child: GestureDetector(
+                onTap: () => context.go('/studio'),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.plum.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                        color: AppColors.purpleAccent.withValues(alpha: 0.5)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Making 1 video (${studioJob.stage ?? 'rendering'} ${studioJob.progress}%)',
-                      style: const TextStyle(
-                        color: AppColors.cream,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: AppFonts.uncutSans,
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.yellow,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        'Making 1 video (${studioJob.stage ?? 'rendering'} ${studioJob.progress}%)',
+                        style: const TextStyle(
+                          color: AppColors.cream,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: AppFonts.uncutSans,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -216,51 +219,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               top: MediaQuery.of(context).padding.top + 10,
               left: 16,
               right: 16,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.purpleAccent,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_circle_rounded,
-                        color: Colors.white, size: 22),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Your video is ready!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          fontFamily: AppFonts.uncutSans,
+              child: GestureDetector(
+                onTap: () {
+                  final readyVideo = studioJob.completedVideo;
+                  ref.read(studioJobProvider.notifier).dismissBanner();
+                  ref.invalidate(userQuotaProvider);
+                  if (readyVideo != null) {
+                    setState(() {
+                      _videos.removeWhere((v) => v.jobId == readyVideo.jobId);
+                      _videos.insert(0, readyVideo);
+                      _currentPage = 0;
+                    });
+                    if (_pageController.hasClients) {
+                      _pageController.jumpToPage(0);
+                    }
+                  } else {
+                    _loadVideos();
+                  }
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.purpleAccent,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded,
+                          color: Colors.white, size: 22),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Your video is ready!',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            fontFamily: AppFonts.uncutSans,
+                          ),
                         ),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        ref.read(studioJobProvider.notifier).dismissBanner();
-                        _loadVideos();
-                      },
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.plum,
+                      Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          'Watch',
+                          style: TextStyle(
+                            color: AppColors.plum,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
-                      child: const Text('Watch'),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
