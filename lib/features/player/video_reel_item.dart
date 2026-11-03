@@ -26,13 +26,16 @@ class VideoReelItem extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<VideoReelItem> createState() => _VideoReelItemState();
+  ConsumerState<VideoReelItem> createState() => VideoReelItemState();
 }
 
-class _VideoReelItemState extends ConsumerState<VideoReelItem>
+class VideoReelItemState extends ConsumerState<VideoReelItem>
     with SingleTickerProviderStateMixin {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
+
+  @visibleForTesting
+  void checkPausePredict(int currentMs) => _checkPausePredict(currentMs);
   bool _hasError = false;
   bool _retriedOnce = false;
   bool _isPlaying = false;
