@@ -7,7 +7,7 @@
 - [x] 2. Add `.github/workflows/flutter-ci.yml` (R1, R2, R3, R4, R5)
 - [x] 3. Add `README.md` (R6)
 - [x] 4. Validate locally (R2, R7)
-- [ ] 5. Push to `main` and record the GitHub Actions result (R1, R7)
+- [x] 5. Push to `main` and record the GitHub Actions result (R1, R7)
 
 ## Verification record
 
@@ -18,8 +18,12 @@ Run locally on macOS, 2026-11-04, Flutter 3.47.8:
 - `flutter test`: 56 tests passed.
 - `actionlint` 1.7.12 (Docker image `rhysd/actionlint`): 0 errors.
 
-Not verified locally:
+GitHub Actions, push to `main` at `fd374b1`:
+[run 41853791933](https://github.com/bhumikasudarshani-cmd/brainrotgram/actions/runs/41853791933),
+conclusion `success`. Log shows Flutter 3.47.8 stable, analyze "No issues
+found", 56 tests passed.
 
-- Execution on a GitHub-hosted `ubuntu-latest` runner, including the
-  `subosito/flutter-action` install and caching.
-- The `pull_request` trigger and concurrency cancellation (no PR was opened).
+Not verified:
+
+- The `pull_request` trigger (no PR was opened, by maintainer preference).
+- Concurrency cancellation of a superseded run (not exercised).
