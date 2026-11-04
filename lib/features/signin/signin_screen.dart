@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../shared/widgets/brand_wordmark.dart';
 
 class SignInScreen extends ConsumerWidget {
   const SignInScreen({super.key});
@@ -20,14 +21,7 @@ class SignInScreen extends ConsumerWidget {
             children: [
               const Spacer(flex: 3),
               // Wordmark
-              Text(
-                'BrainRotGram',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      color: AppColors.plum,
-                      fontSize: 42,
-                    ),
-                textAlign: TextAlign.center,
-              ),
+              const BrandWordmark(fontSize: 32),
               const SizedBox(height: 12),
               // Tagline
               Text(
@@ -57,15 +51,18 @@ class SignInScreen extends ConsumerWidget {
               // Continue with Google button
               SizedBox(
                 width: double.infinity,
-                height: 56,
                 child: ElevatedButton(
                   onPressed: authState.isLoading
                       ? null
                       : () => ref.read(authProvider.notifier).signIn(),
                   style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 56),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                     backgroundColor: AppColors.plum,
                     foregroundColor: AppColors.cream,
-                    disabledBackgroundColor: AppColors.plum.withValues(alpha: 0.6),
+                    disabledBackgroundColor:
+                        AppColors.plum.withValues(alpha: 0.6),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -102,11 +99,14 @@ class SignInScreen extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Text(
-                              'Continue with Google',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                            const Flexible(
+                              child: Text(
+                                'Continue with Google',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],

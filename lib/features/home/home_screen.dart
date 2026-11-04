@@ -6,6 +6,7 @@ import '../../api/api_service.dart';
 import '../../api/models/models.dart';
 import '../../auth/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../shared/widgets/brand_wordmark.dart';
 import '../player/video_reel_item.dart';
 import '../studio/studio_job_provider.dart';
 
@@ -114,12 +115,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _videos.isEmpty ? AppColors.cream : AppColors.reelBackground,
       appBar: _videos.isEmpty
           ? AppBar(
-              title: Text(
-                'BrainRotGram',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontSize: 22,
-                    ),
-              ),
+              title: const BrandWordmark(),
             )
           : null,
       body: Stack(

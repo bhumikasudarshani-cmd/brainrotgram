@@ -12,7 +12,7 @@ class BrainRotGramApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'BrainRotGram',
+      title: 'brainrotgram',
       theme: AppTheme.light,
       debugShowCheckedModeBanner: false,
       routerConfig: router,
