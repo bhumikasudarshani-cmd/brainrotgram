@@ -1,0 +1,102 @@
+{
+  "video": {
+    "jobId": "00000000-0000-4000-8000-000000000001",
+    "state": "ready",
+    "stage": "ready",
+    "progress": 100,
+    "prompt": "Synthetic contract fixture",
+    "title": "Fixture",
+    "createdAt": "2026-11-04T00:00:00.000Z",
+    "updatedAt": "2026-11-04T00:00:00.000Z",
+    "videoUrl": "https://example.invalid/video.mp4",
+    "error": null,
+    "durationSeconds": 215.6,
+    "format": "sketch"
+  },
+  "processing": {
+    "jobId": "00000000-0000-4000-8000-000000000001",
+    "state": "processing",
+    "stage": "voicing",
+    "progress": 22.5,
+    "prompt": "Synthetic contract fixture",
+    "title": "Fixture",
+    "createdAt": "2026-11-04T00:00:00.000Z",
+    "updatedAt": "2026-11-04T00:00:00.000Z",
+    "videoUrl": null,
+    "error": null,
+    "durationSeconds": null,
+    "format": "sketch"
+  },
+  "review": {
+    "schemaVersion": "BrainrottenReviewV1",
+    "jobId": "00000000-0000-4000-8000-000000000001",
+    "version": 2,
+    "positionMs": 185600,
+    "furthestMs": 215600,
+    "completed": true,
+    "bookmarked": true,
+    "answers": {
+      "pause-1": {
+        "choice": 1,
+        "correct": true,
+        "attempts": 2,
+        "answeredAt": "2026-11-04T00:00:00.000Z"
+      }
+    },
+    "updatedAt": "2026-11-04T00:00:00.000Z"
+  },
+  "library": {
+    "jobs": [
+      {
+        "jobId": "00000000-0000-4000-8000-000000000001",
+        "title": "Fixture",
+        "prompt": "Synthetic contract fixture",
+        "state": "ready",
+        "stage": "ready",
+        "progress": 100,
+        "createdAt": "2026-11-04T00:00:00.000Z",
+        "updatedAt": "2026-11-04T00:00:00.000Z",
+        "durationSeconds": 215.6,
+        "format": "sketch",
+        "error": null,
+        "review": {
+          "schemaVersion": "BrainrottenReviewV1",
+          "jobId": "00000000-0000-4000-8000-000000000001",
+          "version": 2,
+          "positionMs": 185600,
+          "furthestMs": 215600,
+          "completed": true,
+          "bookmarked": true,
+          "answers": {
+            "pause-1": {
+              "choice": 1,
+              "correct": true,
+              "attempts": 2,
+              "answeredAt": "2026-11-04T00:00:00.000Z"
+            }
+          },
+          "updatedAt": "2026-11-04T00:00:00.000Z"
+        },
+        "questionCount": 1
+      }
+    ],
+    "nextCursor": null
+  },
+  "errors": {
+    "gateway": {
+      "message": "Unauthorized"
+    },
+    "quota": {
+      "code": "trial_limit_reached",
+      "message": "You have used all 5 lifetime trial videos.",
+      "retryable": false,
+      "requestId": "fixture-quota"
+    },
+    "unavailable": {
+      "code": "internal_error",
+      "message": "The hosted service is temporarily unavailable.",
+      "retryable": true,
+      "requestId": "fixture-unavailable"
+    }
+  }
+}

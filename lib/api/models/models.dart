@@ -6,7 +6,7 @@ class VideoJob {
   final int? progress;
   final String? title;
   final String format;
-  final int? durationSeconds;
+  final num? durationSeconds;
   final String? videoUrl;
   final String? posterUrl;
   final String? audioUrl;
@@ -14,7 +14,7 @@ class VideoJob {
   final bool mediaExpired;
   final DateTime? mediaExpiresAt;
   final DateTime createdAt;
-  final String? reviewState;
+  final VideoReview? review;
   final int? questionCount;
   final String? error;
 
@@ -33,7 +33,7 @@ class VideoJob {
     this.mediaExpired = false,
     this.mediaExpiresAt,
     required this.createdAt,
-    this.reviewState,
+    this.review,
     this.questionCount,
     this.error,
   });
@@ -43,10 +43,10 @@ class VideoJob {
       jobId: json['jobId'] as String,
       state: json['state'] as String,
       stage: json['stage'] as String?,
-      progress: json['progress'] as int?,
+      progress: (json['progress'] as num?)?.round(),
       title: json['title'] as String?,
       format: json['format'] as String,
-      durationSeconds: json['durationSeconds'] as int?,
+      durationSeconds: json['durationSeconds'] as num?,
       videoUrl: json['videoUrl'] as String?,
       posterUrl: json['posterUrl'] as String?,
       audioUrl: json['audioUrl'] as String?,
@@ -56,7 +56,9 @@ class VideoJob {
           ? DateTime.parse(json['mediaExpiresAt'] as String)
           : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      reviewState: json['reviewState'] as String?,
+      review: json['review'] is Map<String, dynamic>
+          ? VideoReview.fromJson(json['review'] as Map<String, dynamic>)
+          : null,
       questionCount: json['questionCount'] as int?,
       error: json['error'] as String?,
     );
@@ -140,7 +142,7 @@ class VideoReview {
       completed: json['completed'] as bool? ?? false,
       bookmarked: json['bookmarked'] as bool? ?? false,
       answers: (json['answers'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, v as int),
+            (k, v) => MapEntry(k, (v as Map<String, dynamic>)['choice'] as int),
           ) ??
           {},
       updatedAt: json['updatedAt'] != null
@@ -191,18 +193,29 @@ class ApiError {
   final String code;
   final String message;
   final bool retryable;
+  final String? requestId;
 
   const ApiError({
     required this.code,
     required this.message,
     required this.retryable,
+    this.requestId,
   });
 
-  factory ApiError.fromJson(Map<String, dynamic> json) {
+  bool get isQuota => code == 'trial_limit_reached' || code == 'QUOTA_EXCEEDED';
+
+  String get title => isQuota ? 'No free videos left' : 'Could not make video';
+
+  factory ApiError.fromJson(Map<String, dynamic> json,
+      {int? statusCode, String? requestId}) {
     return ApiError(
-      code: json['code'] as String? ?? 'ERROR',
+      code: json['code'] as String? ??
+          (statusCode == 401 ? 'unauthorized' : 'ERROR'),
       message: json['message'] as String? ?? 'An error occurred.',
-      retryable: json['retryable'] as bool? ?? false,
+      retryable: json['retryable'] as bool? ??
+          (statusCode != null &&
+              (statusCode >= 500 || statusCode == 408 || statusCode == 429)),
+      requestId: json['requestId'] as String? ?? requestId,
     );
   }
 }
