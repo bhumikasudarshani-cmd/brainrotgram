@@ -155,23 +155,26 @@ class StudioJobNotifier extends StateNotifier<StudioJobState> {
       return true;
     } on DioException catch (e) {
       ApiError apiError;
-      if (e.response?.statusCode == 402 ||
-          e.response?.data?['code'] == 'QUOTA_EXCEEDED') {
-        apiError = const ApiError(
+      final status = e.response?.statusCode;
+      final data = e.response?.data;
+      final requestId = e.response?.headers.value('x-request-id');
+      if (status == 402) {
+        apiError = ApiError(
           code: 'QUOTA_EXCEEDED',
-          message: "You've used your 5 free videos.",
+          message: "You've used your free videos.",
           retryable: false,
+          requestId: requestId,
         );
-      } else if (e.response?.data is Map<String, dynamic>) {
-        apiError = ApiError.fromJson(e.response!.data as Map<String, dynamic>);
+      } else if (data is Map<String, dynamic>) {
+        apiError =
+            ApiError.fromJson(data, statusCode: status, requestId: requestId);
       } else {
-        final status = e.response?.statusCode;
-        final retryable =
-            status != null && (status >= 500 || status == 408 || status == 429);
         apiError = ApiError(
           code: status != null ? '$status' : 'NETWORK_ERROR',
-          message: e.message ?? 'Failed to submit video. Please try again.',
-          retryable: retryable,
+          message: 'Could not reach the video service. Please try again.',
+          retryable:
+              status == null || status >= 500 || status == 408 || status == 429,
+          requestId: requestId,
         );
       }
       state = state.copyWith(
@@ -220,14 +223,15 @@ class StudioJobNotifier extends StateNotifier<StudioJobState> {
           isCompleted: true,
           completedVideo: job,
         );
-      } else if (job.state == 'failed') {
+      } else if (job.state == 'failed' || job.state == 'needs_review') {
         _pollingTimer?.cancel();
         state = state.copyWith(
           stage: 'failed',
           error: ApiError(
-            code: 'RENDER_FAILED',
+            code:
+                job.state == 'needs_review' ? 'needs_review' : 'RENDER_FAILED',
             message: job.error ?? 'Video generation failed. Please try again.',
-            retryable: true,
+            retryable: false,
           ),
         );
       } else {

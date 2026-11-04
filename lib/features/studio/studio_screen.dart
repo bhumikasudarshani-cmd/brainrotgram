@@ -122,14 +122,14 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
     }
 
     await ref.read(studioJobProvider.notifier).generateVideo(
-      prompt: topic,
-      format: _selectedFormat,
-      language: _selectedLanguage,
-      quizCount: _questionCount,
-      cast: cast,
-      participants: participants,
-      narrator: narrator,
-    );
+          prompt: topic,
+          format: _selectedFormat,
+          language: _selectedLanguage,
+          quizCount: _questionCount,
+          cast: cast,
+          participants: participants,
+          narrator: narrator,
+        );
   }
 
   Future<void> _pickCharacter({
@@ -429,7 +429,8 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
               children: [
                 _buildCharacterCard(
                   label: 'Asker',
-                  characterId: _askerId ?? (characters.isNotEmpty ? characters[0].id : 'jack'),
+                  characterId: _askerId ??
+                      (characters.isNotEmpty ? characters[0].id : 'jack'),
                   characters: characters,
                   onTap: () {
                     _pickCharacter(
@@ -443,7 +444,8 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                 const SizedBox(width: 10),
                 _buildCharacterCard(
                   label: 'Explainer',
-                  characterId: _explainerId ?? (characters.length > 1 ? characters[1].id : 'jhatka'),
+                  characterId: _explainerId ??
+                      (characters.length > 1 ? characters[1].id : 'jhatka'),
                   characters: characters,
                   onTap: () {
                     _pickCharacter(
@@ -598,7 +600,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    "You've used your 5 free videos.",
+                    "You've used all ${quota.limit} free videos.",
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.plum,
                           fontWeight: FontWeight.w600,
@@ -675,9 +677,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
     VoidCallback onRetry,
     VoidCallback onDismiss,
   ) {
-    final isQuota = error.code == 'QUOTA_EXCEEDED';
-    final displayMessage =
-        isQuota ? "You've used your 5 free videos." : error.message;
+    final displayMessage = error.message;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -697,7 +697,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  isQuota ? 'Quota Exceeded' : error.code,
+                  error.title,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     color: AppColors.plum,
@@ -712,6 +712,9 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
             displayMessage,
             style: const TextStyle(fontSize: 13, color: AppColors.plum),
           ),
+          if (error.requestId != null)
+            SelectableText('Request ID: ${error.requestId}',
+                style: const TextStyle(fontSize: 11, color: AppColors.plum)),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -777,11 +780,10 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                   const SizedBox(height: 24),
                   Text(
                     'Your video is ready!',
-                    style:
-                        Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.plum,
-                            ),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.plum,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -828,9 +830,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    jobState.error?.code == 'QUOTA_EXCEEDED'
-                        ? "You've used your 5 free videos."
-                        : (jobState.error?.code ?? 'Generation Failed'),
+                    jobState.error?.title ?? 'Generation failed',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.plum,
@@ -838,8 +838,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  if (jobState.error != null &&
-                      jobState.error!.code != 'QUOTA_EXCEEDED')
+                  if (jobState.error != null)
                     Text(
                       jobState.error!.message,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -847,6 +846,8 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                           ),
                       textAlign: TextAlign.center,
                     ),
+                  if (jobState.error?.requestId != null)
+                    SelectableText('Request ID: ${jobState.error!.requestId}'),
                   const SizedBox(height: 24),
                   if (jobState.error?.retryable == true)
                     SizedBox(
@@ -992,7 +993,8 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
 
     final isTopicEmpty = _topicController.text.trim().isEmpty;
     final isQuotaExhausted = quota != null && quota.remaining <= 0;
-    final canGenerate = !isTopicEmpty && !isQuotaExhausted && !studioJob.isSubmitting;
+    final canGenerate =
+        !isTopicEmpty && !isQuotaExhausted && !studioJob.isSubmitting;
 
     return Scaffold(
       backgroundColor: AppColors.cream,
@@ -1157,9 +1159,8 @@ class _FormatCard extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: selected
-                    ? AppColors.purpleAccent
-                    : AppColors.textSecondary,
+                color:
+                    selected ? AppColors.purpleAccent : AppColors.textSecondary,
                 size: 22,
               ),
               const SizedBox(width: 12),

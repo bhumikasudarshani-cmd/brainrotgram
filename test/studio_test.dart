@@ -285,7 +285,7 @@ void main() {
 
       expect(success, isFalse);
       expect(notifier.state.error?.code, 'QUOTA_EXCEEDED');
-      expect(notifier.state.error?.message, "You've used your 5 free videos.");
+      expect(notifier.state.error?.message, "You've used your free videos.");
       expect(notifier.state.error?.retryable, isFalse);
 
       notifier.dispose();
@@ -383,7 +383,8 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('exhausted quota displays 5 free videos message and disables button',
+    testWidgets(
+        'exhausted quota displays 5 free videos message and disables button',
         (tester) async {
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1.0;
@@ -410,7 +411,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Warning text
-      expect(find.text("You've used your 5 free videos."), findsOneWidget);
+      expect(find.text("You've used all 5 free videos."), findsOneWidget);
 
       // Enter topic
       await tester.enterText(
@@ -571,15 +572,17 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('TEMPORARY_ERROR'), findsOneWidget);
-      expect(find.text('Upstream network timeout. Please retry.'), findsOneWidget);
+      expect(find.text('Could not make video'), findsOneWidget);
+      expect(
+          find.text('Upstream network timeout. Please retry.'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
       expect(find.text('Dismiss'), findsOneWidget);
     });
   });
 
   group('Validate endpoint verification', () {
-    test('calling validateVideo sends expected payload without generating video',
+    test(
+        'calling validateVideo sends expected payload without generating video',
         () async {
       final fakeApi = FakeApiService();
 
