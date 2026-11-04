@@ -323,6 +323,62 @@ void main() {
   });
 
   group('StudioScreen Widget', () {
+    for (final format in [
+      'sketch',
+      'skit',
+      'prreview',
+      'tierlist',
+      'groupchat'
+    ]) {
+      testWidgets('phone format tile selects and submits $format',
+          (tester) async {
+        tester.view.physicalSize = const Size(384, 832);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final fakeApi = FakeApiService();
+        await tester.pumpWidget(ProviderScope(
+          overrides: [apiServiceProvider.overrideWithValue(fakeApi)],
+          child: const MaterialApp(home: StudioScreen()),
+        ));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+            find.byType(TextField), 'Explain async state updates');
+        final tile = find.byKey(ValueKey('format-$format'));
+        await tester.ensureVisible(tile);
+        await tester.pumpAndSettle();
+        expect(tester.getSize(tile).height, greaterThanOrEqualTo(112));
+        await tester.tap(tile);
+        await tester.pumpAndSettle();
+        expect(tester.widget<Semantics>(tile).properties.selected, isTrue);
+        for (final other in [
+          'sketch',
+          'skit',
+          'prreview',
+          'tierlist',
+          'groupchat'
+        ]) {
+          if (other != format) {
+            expect(
+                tester
+                    .widget<Semantics>(find.byKey(ValueKey('format-$other')))
+                    .properties
+                    .selected,
+                isFalse);
+          }
+        }
+        await tester.scrollUntilVisible(
+            find.widgetWithText(ElevatedButton, 'Generate'), 240,
+            scrollable: find.byType(Scrollable).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Generate'));
+        await tester.pump();
+        expect(fakeApi.createVideoPayloads.single['format'], format);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+
     testWidgets('renders topic, format cards, quota, and voice pickers',
         (tester) async {
       tester.view.physicalSize = const Size(800, 2400);
@@ -534,12 +590,9 @@ void main() {
 
       await tester.pump();
 
-      expect(find.text('Generating Video'), findsOneWidget);
-      expect(find.text('Making your video…'), findsOneWidget);
-      expect(
-        find.textContaining('pill stays on Home until ready'),
-        findsOneWidget,
-      );
+      expect(find.text('Creating reel'), findsOneWidget);
+      expect(find.text('Making your reel…'), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
     });
 
     testWidgets(

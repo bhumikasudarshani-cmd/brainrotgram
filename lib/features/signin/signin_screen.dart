@@ -32,22 +32,7 @@ class SignInScreen extends ConsumerWidget {
                     ),
                 textAlign: TextAlign.center,
               ),
-              const Spacer(flex: 2),
-              // Illustration area
-              Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  color: AppColors.lavender.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.play_circle_outline_rounded,
-                  size: 80,
-                  color: AppColors.purpleAccent,
-                ),
-              ),
-              const Spacer(flex: 2),
+              const Spacer(flex: 4),
               // Continue with Google button
               SizedBox(
                 width: double.infinity,

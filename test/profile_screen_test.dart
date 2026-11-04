@@ -156,9 +156,7 @@ void main() {
       expect(find.text('alice@example.com'), findsOneWidget);
 
       // Quota ring
-      expect(find.text('3 of 5 left'), findsOneWidget);
-      expect(find.text('Free videos remaining'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget); // inside ring
+      expect(find.text('3 of 5 free reels left'), findsOneWidget);
     });
 
     testWidgets('displays 3-column poster grid for ready videos',
@@ -242,7 +240,7 @@ void main() {
 
       expect(find.text('No videos yet'), findsOneWidget);
       expect(
-        find.textContaining('Videos you make in Studio or your agent records'),
+        find.textContaining('Create a reel or send one from your agent'),
         findsOneWidget,
       );
     });
@@ -321,8 +319,7 @@ void main() {
       );
     });
 
-    testWidgets('Sign out button triggers confirmation dialog',
-        (tester) async {
+    testWidgets('Sign out button triggers confirmation dialog', (tester) async {
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -351,7 +348,6 @@ void main() {
 
       // Dialog appears
       expect(find.text('Sign out?'), findsOneWidget);
-      expect(find.text("You'll need to sign in again."), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
     });
   });

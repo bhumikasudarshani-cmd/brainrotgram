@@ -5,6 +5,8 @@ import 'package:video_player_platform_interface/video_player_platform_interface.
 class FakePlayer extends VideoPlayerPlatform {
   final streams = <int, StreamController<VideoEvent>>{};
   final urls = <String?>[];
+  final seeks = <Duration>[];
+  int plays = 0, pauses = 0;
 
   @override
   Future<void> init() async {}
@@ -38,11 +40,11 @@ class FakePlayer extends VideoPlayerPlatform {
   @override
   Future<void> setPlaybackSpeed(int playerId, double speed) async {}
   @override
-  Future<void> play(int playerId) async {}
+  Future<void> play(int playerId) async { plays++; }
   @override
-  Future<void> pause(int playerId) async {}
+  Future<void> pause(int playerId) async { pauses++; }
   @override
-  Future<void> seekTo(int playerId, Duration position) async {}
+  Future<void> seekTo(int playerId, Duration position) async { seeks.add(position); }
   @override
   Future<Duration> getPosition(int playerId) async => Duration.zero;
   @override

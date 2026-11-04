@@ -1,5 +1,6 @@
 /// Video job model from the API.
 class VideoJob {
+  final String? sessionId;
   final String jobId;
   final String state;
   final String? stage;
@@ -20,6 +21,7 @@ class VideoJob {
 
   const VideoJob({
     required this.jobId,
+    this.sessionId,
     required this.state,
     this.stage,
     this.progress,
@@ -41,6 +43,7 @@ class VideoJob {
   factory VideoJob.fromJson(Map<String, dynamic> json) {
     return VideoJob(
       jobId: json['jobId'] as String,
+      sessionId: json['sessionId'] as String?,
       state: json['state'] as String,
       stage: json['stage'] as String?,
       progress: (json['progress'] as num?)?.round(),
@@ -303,6 +306,9 @@ class StudioConfigData {
 
 /// Session summary from GET /sessions.
 class SessionSummary {
+  final String? projectName;
+  final String? objective;
+  final String? agent;
   final String sessionId;
   final String title;
   final DateTime createdAt;
@@ -311,12 +317,18 @@ class SessionSummary {
     required this.sessionId,
     required this.title,
     required this.createdAt,
+    this.projectName,
+    this.objective,
+    this.agent,
   });
 
   factory SessionSummary.fromJson(Map<String, dynamic> json) {
     return SessionSummary(
       sessionId: json['sessionId'] as String,
       title: json['title'] as String,
+      projectName: json['projectName'] as String?,
+      objective: json['objective'] as String?,
+      agent: json['agent'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }

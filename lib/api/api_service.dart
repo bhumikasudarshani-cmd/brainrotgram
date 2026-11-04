@@ -152,8 +152,18 @@ class ApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getSessionPage(
+      {int limit = 20, String? cursor}) async {
+    final response = await _dio.get('/sessions', queryParameters: {
+      'limit': limit,
+      if (cursor != null) 'cursor': cursor,
+    });
+    return response.data as Map<String, dynamic>;
+  }
+
   /// GET /sessions
-  Future<List<SessionSummary>> getSessions({int limit = 20, String? cursor}) async {
+  Future<List<SessionSummary>> getSessions(
+      {int limit = 20, String? cursor}) async {
     final queryParams = <String, dynamic>{'limit': limit};
     if (cursor != null) queryParams['cursor'] = cursor;
     final response = await _dio.get('/sessions', queryParameters: queryParams);
@@ -181,7 +191,8 @@ class ApiService {
     Map<String, dynamic> patch,
   ) async {
     try {
-      final response = await _dio.put('/sessions/$sessionId/review', data: patch);
+      final response =
+          await _dio.put('/sessions/$sessionId/review', data: patch);
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       if (e.response?.statusCode == 409 && e.response?.data != null) {

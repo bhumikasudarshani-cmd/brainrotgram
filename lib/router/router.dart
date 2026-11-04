@@ -65,7 +65,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // Main app with bottom nav
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
+        navigatorContainerBuilder: (context, shell, children) =>
+            SmoothBranchContainer(
+                currentIndex: shell.currentIndex, children: children),
         builder: (context, state, navigationShell) {
           return AppShell(
             navigationShell: navigationShell,

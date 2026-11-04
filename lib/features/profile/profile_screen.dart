@@ -191,7 +191,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Sign out?'),
-        content: const Text("You'll need to sign in again."),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -217,110 +216,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     }
   }
 
-  Widget _buildQuotaRing(AsyncValue<UserQuota> quotaAsync) {
-    return quotaAsync.when(
-      data: (quota) {
-        final remaining = quota.remaining;
-        final limit = quota.limit;
-        final progress = limit > 0 ? (remaining / limit).clamp(0.0, 1.0) : 0.0;
-
-        return Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 4,
-                        backgroundColor: AppColors.divider,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                            AppColors.purpleAccent),
-                      ),
-                      Text(
-                        '$remaining',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.plum,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$remaining of $limit left',
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    Text(
-                      'Free videos remaining',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-      loading: () => Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.divider),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 14),
-              Text('Loading quota…'),
-            ],
-          ),
-        ),
-      ),
-      error: (_, __) => Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.divider),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.movie_filter_rounded,
-                  size: 24, color: AppColors.purpleAccent),
-              SizedBox(width: 14),
-              Text('Quota unavailable'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildQuotaRing(AsyncValue<UserQuota> quotaAsync) => quotaAsync.when(
+        data: (quota) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('${quota.remaining} of ${quota.limit} free reels left',
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: AppColors.textSecondary))),
+        loading: () => const SizedBox(
+            height: 20, child: Center(child: LinearProgressIndicator())),
+        error: (_, __) => const Text('Couldn’t load your balance',
+            textAlign: TextAlign.center),
+      );
 
   Widget _buildPosterGrid({
     required List<VideoJob> videos,
@@ -517,7 +426,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         child: ListView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.fromLTRB(
+              20, 20, 20, MediaQuery.paddingOf(context).bottom + 24),
           children: [
             // Profile header
             Center(
@@ -584,8 +494,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 isLoading: _isLoadingReady,
                 isLoadingMore: _isLoadingMoreReady,
                 emptyTitle: 'No videos yet',
-                emptySubtitle:
-                    'Videos you make in Studio or your agent records will appear here.',
+                emptySubtitle: 'Create a reel or send one from your agent.',
                 emptyIcon: Icons.movie_outlined,
               )
             else
@@ -594,8 +503,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 isLoading: _isLoadingSaved,
                 isLoadingMore: _isLoadingMoreSaved,
                 emptyTitle: 'No saved videos',
-                emptySubtitle:
-                    'Double-tap a reel or tap the bookmark button while watching to save videos here.',
+                emptySubtitle: 'Reels you bookmark appear here.',
                 emptyIcon: Icons.bookmark_border_rounded,
               ),
             const SizedBox(height: 28),
@@ -630,8 +538,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   final uri = Uri.parse(
                       'https://d3sk6lwsh4ufyv.cloudfront.net/credits.html');
                   try {
-                    await launchUrl(uri,
-                        mode: LaunchMode.externalApplication);
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
                   } catch (_) {}
                 },
               ),

@@ -373,7 +373,9 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               ChoiceChip(
                 label: const Text('Let AI pick'),
@@ -385,7 +387,6 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(width: 8),
               ChoiceChip(
                 label: const Text('Choose speakers'),
                 selected: !_aiPickVoices,
@@ -753,7 +754,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
-        title: const Text('Generating Video'),
+        title: const Text('Creating reel'),
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
           onPressed: () => context.go('/home'),
@@ -934,23 +935,13 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Making your video…',
+                    'Making your reel…',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.plum,
                         ),
                   ),
                   const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      'You can leave; a "Making 1 video" pill stays on Home until ready.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
                   const SizedBox(height: 36),
                   SizedBox(
                     width: 200,
@@ -958,7 +949,7 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => context.go('/home'),
                       icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                      label: const Text('Back to Home'),
+                      label: const Text('Home'),
                     ),
                   ),
                 ],
@@ -999,10 +990,11 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
-        title: const Text('Studio'),
+        title: const Text('Create'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(
+            20, 20, 20, MediaQuery.paddingOf(context).bottom + 24),
         children: [
           // Inline error banner if any submission error occurred
           if (studioJob.error != null)
@@ -1037,12 +1029,25 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
             style: Theme.of(context).textTheme.labelLarge,
           ),
           const SizedBox(height: 12),
-          ...formats.map((f) => _FormatCard(
-                format: f,
-                icon: _formatIcon(f.id),
-                selected: _selectedFormat == f.id,
-                onTap: () => setState(() => _selectedFormat = f.id),
-              )),
+          LayoutBuilder(builder: (context, constraints) {
+            final columns = MediaQuery.textScalerOf(context).scale(1) > 1.3
+                ? 1
+                : constraints.maxWidth >= 600
+                    ? 3
+                    : 2;
+            final width = (constraints.maxWidth - (columns - 1) * 12) / columns;
+            return Wrap(spacing: 12, runSpacing: 12, children: [
+              for (final format in formats)
+                SizedBox(
+                  width: width,
+                  child: _FormatOption(
+                      format: format,
+                      icon: _formatIcon(format.id),
+                      selected: _selectedFormat == format.id,
+                      onTap: () => setState(() => _selectedFormat = format.id)),
+                )
+            ]);
+          }),
           const SizedBox(height: 24),
 
           // Voice Pickers (depend on format)
@@ -1122,76 +1127,74 @@ class _StudioScreenState extends ConsumerState<StudioScreen> {
   }
 }
 
-class _FormatCard extends StatelessWidget {
+class _FormatOption extends StatelessWidget {
   final StudioFormat format;
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
-
-  const _FormatCard({
-    required this.format,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
+  const _FormatOption(
+      {required this.format,
+      required this.icon,
+      required this.selected,
+      required this.onTap});
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
+  Widget build(BuildContext context) => Semantics(
+        key: ValueKey('format-${format.id}'),
+        label: format.name,
+        selected: selected,
+        button: true,
+        excludeSemantics: true,
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.purpleAccent.withValues(alpha: 0.08)
-                : AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected ? AppColors.purpleAccent : AppColors.divider,
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                color:
-                    selected ? AppColors.purpleAccent : AppColors.textSecondary,
-                size: 22,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      format.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+        child: Tooltip(
+            message: format.description,
+            child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(20),
+                  child: AnimatedContainer(
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 160),
+                    curve: Curves.easeOut,
+                    constraints: const BoxConstraints(minHeight: 112),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
                         color:
-                            selected ? AppColors.purpleAccent : AppColors.plum,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      format.description,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              if (selected)
-                const Icon(Icons.check_circle_rounded,
-                    color: AppColors.purpleAccent, size: 22),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+                            selected ? AppColors.lavender : AppColors.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: selected
+                                ? AppColors.purpleAccent
+                                : Colors.transparent,
+                            width: 2)),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Icon(icon, size: 26, color: AppColors.plum),
+                                Icon(
+                                    selected
+                                        ? Icons.radio_button_checked_rounded
+                                        : Icons.radio_button_off_rounded,
+                                    size: 20,
+                                    color: selected
+                                        ? AppColors.purpleAccent
+                                        : AppColors.textSecondary)
+                              ]),
+                          const SizedBox(height: 12),
+                          Text(format.name,
+                              maxLines: 2,
+                              style: const TextStyle(
+                                  fontFamily: AppFonts.uncutSans,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.plum)),
+                        ]),
+                  ),
+                ))),
+      );
 }

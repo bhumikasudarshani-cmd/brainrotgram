@@ -86,7 +86,7 @@ void main() {
       );
 
       // Header chip
-      expect(find.text('PAUSE & PREDICT'), findsOneWidget);
+      expect(find.text('Predict'), findsOneWidget);
 
       // Question prompt
       expect(find.text('What happens on the second retry?'), findsOneWidget);

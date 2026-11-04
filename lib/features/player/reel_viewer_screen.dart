@@ -62,7 +62,9 @@ class _ReelViewerScreenState extends State<ReelViewerScreen> {
               return VideoReelItem(
                 key: ValueKey(widget.videos[index].jobId),
                 video: widget.videos[index],
-                isActive: index == _currentPage,
+                isActive: TickerMode.valuesOf(context).enabled &&
+                    index == _currentPage,
+                hasNextVideo: index < widget.videos.length - 1,
                 onNextVideo: _goToNextVideo,
               );
             },

@@ -8,6 +8,7 @@ class PausePredictOverlay extends StatefulWidget {
   final LearningQuestion question;
   final int? existingAnswer;
   final bool showExplanation;
+  final double bottomInset;
   final Function(int choice) onAnswerSelected;
 
   const PausePredictOverlay({
@@ -15,6 +16,7 @@ class PausePredictOverlay extends StatefulWidget {
     required this.question,
     this.existingAnswer,
     this.showExplanation = false,
+    this.bottomInset = 0,
     required this.onAnswerSelected,
   });
 
@@ -56,7 +58,7 @@ class _PausePredictOverlayState extends State<PausePredictOverlay> {
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+        margin: EdgeInsets.fromLTRB(16, 0, 16, widget.bottomInset + 24),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: AppColors.plum.withValues(alpha: 0.95),
@@ -84,13 +86,13 @@ class _PausePredictOverlayState extends State<PausePredictOverlay> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
-                    'PAUSE & PREDICT',
+                    'Predict',
                     style: TextStyle(
                       fontFamily: AppFonts.uncutSans,
                       color: Colors.white,
-                      fontSize: 10,
+                      fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
+                      letterSpacing: 0,
                     ),
                   ),
                 ),

@@ -17,12 +17,14 @@ class VideoReelItem extends ConsumerStatefulWidget {
   final VideoJob video;
   final bool isActive;
   final VoidCallback onNextVideo;
+  final bool hasNextVideo;
 
   const VideoReelItem({
     super.key,
     required this.video,
     required this.isActive,
     required this.onNextVideo,
+    this.hasNextVideo = true,
   });
 
   @override
@@ -30,7 +32,7 @@ class VideoReelItem extends ConsumerStatefulWidget {
 }
 
 class VideoReelItemState extends ConsumerState<VideoReelItem>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
 
@@ -45,6 +47,10 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
   List<LearningQuestion> _learningQuestions = [];
   String? _takeaway;
   bool _showEndQuiz = false;
+  bool _endDismissed = false;
+  bool _resumeOnForeground = false;
+  bool _positionWritePending = false;
+  bool _restoredPosition = false;
 
   LearningQuestion? _currentPauseQuestion;
   bool _showPauseExplanation = false;
@@ -56,6 +62,7 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _heartAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -67,6 +74,15 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
 
     _loadLearningAndReview();
     _initializePlayer(widget.video.videoUrl);
+    _positionReportTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      final controller = _controller;
+      if (widget.isActive &&
+          controller != null &&
+          controller.value.isPlaying &&
+          !_positionWritePending) {
+        _recordWatchPosition(controller.value.position.inMilliseconds);
+      }
+    });
   }
 
   Future<void> _loadLearningAndReview() async {
@@ -80,6 +96,7 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
         setState(() {
           _review = review;
         });
+        _restorePosition();
       }
 
       final pack = await learningFuture;
@@ -125,13 +142,7 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
       _controller!.setLooping(false);
       _controller!.addListener(_playerListener);
 
-      // Resume from positionMs if available
-      if (_review != null && _review!.positionMs > 0) {
-        final resumeTo = Duration(milliseconds: _review!.positionMs);
-        if (resumeTo < _controller!.value.duration) {
-          await _controller!.seekTo(resumeTo);
-        }
-      }
+      _restorePosition();
 
       if (mounted) {
         setState(() {
@@ -151,6 +162,24 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
       } else {
         if (mounted) setState(() => _hasError = true);
       }
+    }
+  }
+
+  void _restorePosition() {
+    final controller = _controller;
+    final review = _review;
+    if (_restoredPosition ||
+        controller == null ||
+        !controller.value.isInitialized ||
+        review == null) {
+      return;
+    }
+    _restoredPosition = true;
+    final position = Duration(milliseconds: review.positionMs);
+    if (!review.completed &&
+        position > Duration.zero &&
+        position < controller.value.duration) {
+      controller.seekTo(position);
     }
   }
 
@@ -191,11 +220,15 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
     final currentMs = val.position.inMilliseconds;
     _checkPausePredict(currentMs);
 
+    if (val.isInitialized &&
+        val.position < val.duration - const Duration(seconds: 1)) {
+      _endDismissed = false;
+    }
     // Check if finished
     if (val.isInitialized &&
         val.position >= val.duration &&
         val.duration > Duration.zero) {
-      if (!_showEndQuiz) {
+      if (!_showEndQuiz && !_endDismissed) {
         setState(() {
           _showEndQuiz = true;
           _isPlaying = false;
@@ -231,18 +264,24 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
   }
 
   void _recordWatchPosition(int positionMs, {bool completed = false}) {
-    if (_review == null) return;
-    ref.read(apiServiceProvider).updateVideoReview(
-      widget.video.jobId,
-      {
-        'kind': 'watch',
-        'expectedVersion': _review!.version,
-        'positionMs': positionMs,
-        if (completed) 'completed': true,
-      },
-    ).then((updated) {
-      if (mounted) setState(() => _review = updated);
-    }).catchError((_) {});
+    if (_review == null || _positionWritePending) return;
+    _positionWritePending = true;
+    ref
+        .read(apiServiceProvider)
+        .updateVideoReview(
+          widget.video.jobId,
+          {
+            'kind': 'watch',
+            'expectedVersion': _review!.version,
+            'positionMs': positionMs,
+            if (completed) 'completed': true,
+          },
+        )
+        .then((updated) {
+          if (mounted) setState(() => _review = updated);
+        })
+        .catchError((_) {})
+        .whenComplete(() => _positionWritePending = false);
   }
 
   @override
@@ -261,11 +300,28 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _positionReportTimer?.cancel();
     _controller?.removeListener(_playerListener);
     _controller?.dispose();
     _heartAnimController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      _resumeOnForeground =
+          _resumeOnForeground || (_controller?.value.isPlaying ?? false);
+      _controller?.pause();
+      if (mounted) setState(() => _isPlaying = false);
+    } else {
+      if (_resumeOnForeground && widget.isActive && !_showEndQuiz) {
+        _controller?.play();
+        if (mounted) setState(() => _isPlaying = true);
+      }
+      _resumeOnForeground = false;
+    }
   }
 
   void _togglePlayPause() {
@@ -353,6 +409,7 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
   void _replayVideo() {
     setState(() {
       _showEndQuiz = false;
+      _endDismissed = false;
       _isPlaying = true;
     });
     _controller?.seekTo(Duration.zero);
@@ -360,7 +417,7 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
   }
 
   void _shareVideo() {
-    final title = widget.video.title ?? 'BrainRot reel';
+    final title = widget.video.title ?? 'brainrotgram reel';
     Share.share(
       '$title\nWatch micro-learning reels from code: ${ApiConstants.websiteUrl}',
     );
@@ -368,6 +425,7 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     if (_hasError || widget.video.mediaExpired) {
       return Container(
         color: AppColors.reelBackground,
@@ -380,7 +438,7 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
               const SizedBox(height: 12),
               Text(
                 widget.video.mediaExpired
-                    ? 'Media has expired (30 days)'
+                    ? 'This reel has expired'
                     : 'Unable to play video',
                 style: const TextStyle(color: AppColors.cream, fontSize: 16),
               ),
@@ -397,188 +455,190 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
       );
     }
 
-    return Container(
-      color: AppColors.reelBackground,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Video player or Poster
-          if (_isInitialized && _controller != null)
-            GestureDetector(
-              onTap: _togglePlayPause,
-              onDoubleTap: _handleDoubleTap,
-              onLongPressStart: (_) {
-                if (_isPlaying) _controller?.pause();
-              },
-              onLongPressEnd: (_) {
-                if (_isPlaying) _controller?.play();
-              },
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: _controller!.value.aspectRatio,
-                  child: VideoPlayer(_controller!),
-                ),
-              ),
-            )
-          else if (widget.video.posterUrl != null)
-            CachedNetworkImage(
-              imageUrl: widget.video.posterUrl!,
-              fit: BoxFit.cover,
-            )
-          else
-            const Center(
-              child: CircularProgressIndicator(color: AppColors.purpleAccent),
-            ),
-
-          // Play/Pause indicator icon
-          if (_isInitialized && !_isPlaying && !_showEndQuiz)
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 48,
-                ),
-              ),
-            ),
-
-          // Double-tap heart burst animation
-          if (_showHeartAnimation)
-            Center(
-              child: ScaleTransition(
-                scale: _heartScaleAnimation,
-                child: const Icon(
-                  Icons.favorite_rounded,
-                  color: AppColors.coral,
-                  size: 100,
-                ),
-              ),
-            ),
-
-          // Right rail actions (Save/Bookmark, Share)
-          Positioned(
-            right: 12,
-            bottom: 110,
-            child: Column(
-              children: [
-                IconButton(
-                  onPressed: _toggleBookmark,
-                  icon: Icon(
-                    _review?.bookmarked == true
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
-                    color: _review?.bookmarked == true
-                        ? AppColors.yellow
-                        : Colors.white,
-                    size: 30,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        color: AppColors.reelBackground,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Video player or Poster
+            if (_isInitialized && _controller != null)
+              GestureDetector(
+                onTap: _togglePlayPause,
+                onDoubleTap: _handleDoubleTap,
+                onLongPressStart: (_) {
+                  if (_isPlaying) _controller?.pause();
+                },
+                onLongPressEnd: (_) {
+                  if (_isPlaying) _controller?.play();
+                },
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: _controller!.value.aspectRatio,
+                    child: VideoPlayer(_controller!),
                   ),
                 ),
-                const SizedBox(height: 8),
-                IconButton(
-                  onPressed: _shareVideo,
-                  icon: const Icon(
-                    Icons.share_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-              ],
-            ),
-          ),
+              )
+            else if (widget.video.posterUrl != null)
+              CachedNetworkImage(
+                imageUrl: widget.video.posterUrl!,
+                fit: BoxFit.cover,
+              )
+            else
+              const Center(
+                child: CircularProgressIndicator(color: AppColors.purpleAccent),
+              ),
 
-          // Bottom info overlay (format chip + title)
-          Positioned(
-            left: 16,
-            right: 70,
-            bottom: 30,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            // Play/Pause indicator icon
+            if (_isInitialized && !_isPlaying && !_showEndQuiz)
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.purpleAccent.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
                   ),
-                  child: Text(
-                    widget.video.formatLabel,
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 48,
+                  ),
+                ),
+              ),
+
+            // Double-tap heart burst animation
+            if (_showHeartAnimation)
+              Center(
+                child: ScaleTransition(
+                  scale: _heartScaleAnimation,
+                  child: const Icon(
+                    Icons.favorite_rounded,
+                    color: AppColors.coral,
+                    size: 100,
+                  ),
+                ),
+              ),
+
+            // Right rail actions (Save/Bookmark, Share)
+            Positioned(
+              right: 12,
+              bottom: bottomInset + 100,
+              child: Column(
+                children: [
+                  IconButton(
+                    tooltip: _review?.bookmarked == true
+                        ? 'Unsave reel'
+                        : 'Save reel',
+                    onPressed: _toggleBookmark,
+                    icon: Icon(
+                      _review?.bookmarked == true
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      color: _review?.bookmarked == true
+                          ? AppColors.yellow
+                          : Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  IconButton(
+                    tooltip: 'Share reel',
+                    onPressed: _shareVideo,
+                    icon: const Icon(
+                      Icons.share_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Bottom info overlay (format chip + title)
+            Positioned(
+              left: 16,
+              right: 70,
+              bottom: bottomInset + 40,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.video.title ?? 'Untitled reel',
                     style: const TextStyle(
                       fontFamily: AppFonts.uncutSans,
                       color: Colors.white,
-                      fontSize: 11,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black54,
+                          blurRadius: 8,
+                        ),
+                      ],
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.video.title ?? 'BrainRot Learning Reel',
-                  style: const TextStyle(
-                    fontFamily: AppFonts.uncutSans,
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black54,
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-
-          // Thin progress bar at the very bottom
-          if (_isInitialized && _controller != null)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: VideoProgressIndicator(
-                _controller!,
-                allowScrubbing: true,
-                colors: const VideoProgressColors(
-                  playedColor: AppColors.purpleAccent,
-                  bufferedColor: Colors.white24,
-                  backgroundColor: Colors.transparent,
-                ),
+                ],
               ),
             ),
 
-          // Pause & Predict Card Overlay
-          if (_currentPauseQuestion != null && !_showEndQuiz)
-            PausePredictOverlay(
-              question: _currentPauseQuestion!,
-              existingAnswer: _review?.answers[_currentPauseQuestion!.id],
-              showExplanation: _showPauseExplanation,
-              onAnswerSelected: _handlePauseAnswer,
-            ),
-
-          // End-of-video full screen quiz overlay
-          if (_showEndQuiz)
-            Positioned.fill(
-              child: EndQuizOverlay(
-                questions:
-                    _learningQuestions.where((q) => !q.isPausePredict).toList(),
-                takeaway: _takeaway,
-                onAnswer: _handleQuizAnswer,
-                onResetAnswers: _handleResetQuiz,
-                onReplay: _replayVideo,
-                onNext: widget.onNextVideo,
+            // Thin progress bar at the very bottom
+            if (_isInitialized && _controller != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: bottomInset + 16,
+                child: VideoProgressIndicator(
+                  _controller!,
+                  allowScrubbing: true,
+                  colors: const VideoProgressColors(
+                    playedColor: AppColors.purpleAccent,
+                    bufferedColor: Colors.white24,
+                    backgroundColor: Colors.transparent,
+                  ),
+                ),
               ),
-            ),
-        ],
+
+            // Pause & Predict Card Overlay
+            if (_currentPauseQuestion != null && !_showEndQuiz)
+              PausePredictOverlay(
+                question: _currentPauseQuestion!,
+                existingAnswer: _review?.answers[_currentPauseQuestion!.id],
+                showExplanation: _showPauseExplanation,
+                onAnswerSelected: _handlePauseAnswer,
+                bottomInset: bottomInset,
+              ),
+
+            // End-of-video full screen quiz overlay
+            if (_showEndQuiz)
+              Positioned.fill(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                      16,
+                      MediaQuery.paddingOf(context).top + 16,
+                      16,
+                      bottomInset + 24),
+                  child: EndQuizOverlay(
+                    questions: _learningQuestions
+                        .where((q) => !q.isPausePredict)
+                        .toList(),
+                    takeaway: _takeaway,
+                    onAnswer: _handleQuizAnswer,
+                    onResetAnswers: _handleResetQuiz,
+                    onReplay: _replayVideo,
+                    onNext: widget.hasNextVideo ? widget.onNextVideo : null,
+                    onClose: () => setState(() {
+                      _endDismissed = true;
+                      _showEndQuiz = false;
+                    }),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

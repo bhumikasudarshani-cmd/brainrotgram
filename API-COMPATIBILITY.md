@@ -2,6 +2,10 @@
 
 The account-owned `/library` list includes videos generated from Android, Studio and MCP. Library rows include `review` and a poster, but no playable video URL; the player fetches `/videos/{jobId}` for a fresh signed URL when needed.
 
+Home groups real `/sessions` checkpoints by `projectName`, retaining their objective and agent. Session details show the canonical context summary and changes, associated videos, and prediction/practice/reflection activities. Review saves use `expectedVersion` and the existing conflict retry. Standalone videos stay in Recent reels; they are never assigned to an invented project. Use the same Google account as the connected agent to see its checkpoints.
+
+Search uses server-side query, format and review filters with pagination and stale-response protection. Players pause when inactive or backgrounded, restore incomplete watch progress, and keep controls above the floating navigation. The Create screen has large format tiles; offline phone-width tests cover all five format selections and their submitted payloads without making real generation calls.
+
 API video lengths can be fractional and exceed the requested target (for example, `215.6` seconds). Progress can also be fractional. Review `answers` contain graded objects with a `choice`, `correct`, `attempts` and `answeredAt`; the mobile model restores each selected choice from those objects.
 
 Errors use `code`, `message`, `retryable` and `requestId`. API Gateway may instead return only `message` for a 401. Studio preserves the request ID for support, handles non-JSON upstream errors, and stops polling `needs_review` jobs without offering another generation request. Failed playback refreshes its signed URL once automatically, then shows an error; refreshing after the widget closes creates no new player.

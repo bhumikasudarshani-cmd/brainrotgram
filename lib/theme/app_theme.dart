@@ -136,9 +136,9 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
-          fontFamily: AppFonts.basteleur,
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
+          fontFamily: AppFonts.uncutSans,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
           color: AppColors.plum,
         ),
       ),
@@ -193,6 +193,20 @@ class AppTheme {
           ),
         ),
       ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 52),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          backgroundColor: AppColors.plum,
+          foregroundColor: AppColors.cream,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: const TextStyle(
+              fontFamily: AppFonts.uncutSans,
+              fontSize: 15,
+              fontWeight: FontWeight.w600),
+        ),
+      ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.plum,
@@ -218,13 +232,21 @@ class AppTheme {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       chipTheme: ChipThemeData(
+        color: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.selected)
+                ? AppColors.purpleAccent
+                : AppColors.lavender),
+        checkmarkColor: AppColors.cream,
         backgroundColor: AppColors.lavender,
         selectedColor: AppColors.purpleAccent,
-        labelStyle: const TextStyle(
-          fontFamily: AppFonts.uncutSans,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
+        labelStyle: WidgetStateTextStyle.resolveWith((states) => TextStyle(
+              fontFamily: AppFonts.uncutSans,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: states.contains(WidgetState.selected)
+                  ? AppColors.cream
+                  : AppColors.plum,
+            )),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -246,7 +268,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.purpleAccent, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: const TextStyle(
           fontFamily: AppFonts.uncutSans,
           color: AppColors.textSecondary,
