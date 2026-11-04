@@ -1,7 +1,9 @@
+import 'dart:typed_data';
+import 'package:video_player_platform_interface/video_player_platform_interface.dart';
+import 'support/fake_player.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
@@ -114,29 +116,10 @@ class _TestApiClient implements ApiClient {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
-    // Mock video_player platform channel so VideoReelItem initializes safely
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-      const MethodChannel('flutter.io/videoPlayer'),
-      (MethodCall methodCall) async {
-        switch (methodCall.method) {
-          case 'init':
-            return null;
-          case 'create':
-            return {'textureId': 1};
-          case 'setLooping':
-          case 'setVolume':
-          case 'play':
-          case 'pause':
-          case 'seekTo':
-          case 'dispose':
-            return null;
-          default:
-            return null;
-        }
-      },
-    );
+  setUp(() {
+    final previous = VideoPlayerPlatform.instance;
+    VideoPlayerPlatform.instance = FakePlayer();
+    addTearDown(() => VideoPlayerPlatform.instance = previous);
   });
 
   group('Review Conflict 409 Retry - ApiService', () {

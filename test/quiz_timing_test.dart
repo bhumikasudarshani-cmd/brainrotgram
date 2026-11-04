@@ -1,5 +1,6 @@
+import 'package:video_player_platform_interface/video_player_platform_interface.dart';
+import 'support/fake_player.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -106,8 +107,7 @@ void main() {
       expect(selectedAnswer, 1);
     });
 
-    testWidgets('Answer and explanation are revealed at endMs',
-        (tester) async {
+    testWidgets('Answer and explanation are revealed at endMs', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -159,29 +159,10 @@ void main() {
   });
 
   group('Quiz Timing - VideoReelItem Integration Tests', () {
-    setUpAll(() {
-      // Mock video_player platform channel
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-        const MethodChannel('flutter.io/videoPlayer'),
-        (MethodCall methodCall) async {
-          switch (methodCall.method) {
-            case 'init':
-              return null;
-            case 'create':
-              return {'textureId': 1};
-            case 'setLooping':
-            case 'setVolume':
-            case 'play':
-            case 'pause':
-            case 'seekTo':
-            case 'dispose':
-              return null;
-            default:
-              return null;
-          }
-        },
-      );
+    setUp(() {
+      final previous = VideoPlayerPlatform.instance;
+      VideoPlayerPlatform.instance = FakePlayer();
+      addTearDown(() => VideoPlayerPlatform.instance = previous);
     });
 
     testWidgets(
@@ -292,7 +273,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      final state = tester.state<VideoReelItemState>(find.byType(VideoReelItem));
+      final state =
+          tester.state<VideoReelItemState>(find.byType(VideoReelItem));
 
       // 1. Playback at 1000ms (< startMs 2000ms): Card not visible
       state.checkPausePredict(1000);
@@ -304,13 +286,15 @@ void main() {
       await tester.pump();
       expect(find.byType(PausePredictOverlay), findsOneWidget);
       expect(find.text('What happens on the second retry?'), findsOneWidget);
-      expect(find.text('The stored result is returned.'), findsNothing); // not yet revealed
+      expect(find.text('The stored result is returned.'),
+          findsNothing); // not yet revealed
 
       // 3. Playback reaches 5000ms (endMs): Answer and explanation are revealed
       state.checkPausePredict(5000);
       await tester.pump();
       expect(find.byType(PausePredictOverlay), findsOneWidget);
-      expect(find.text('The stored result is returned.'), findsOneWidget); // revealed!
+      expect(find.text('The stored result is returned.'),
+          findsOneWidget); // revealed!
       expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
     });
   });

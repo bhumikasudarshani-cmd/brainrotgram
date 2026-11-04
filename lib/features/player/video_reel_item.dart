@@ -109,11 +109,19 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
     }
 
     try {
+      if (!mounted) return;
       final oldController = _controller;
-      _controller = VideoPlayerController.networkUrl(Uri.parse(url));
-      await oldController?.dispose();
+      oldController?.removeListener(_playerListener);
+      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      _controller = controller;
+      // A failed native player may take time to release its resources.
+      // Start the replacement without blocking on that cleanup.
+      if (oldController != null) {
+        unawaited(oldController.dispose().catchError((Object _) {}));
+      }
 
-      await _controller!.initialize();
+      await controller.initialize();
+      if (!mounted || _controller != controller) return;
       _controller!.setLooping(false);
       _controller!.addListener(_playerListener);
 
@@ -150,7 +158,8 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
     try {
       final api = ref.read(apiServiceProvider);
       final fresh = await api.getVideo(widget.video.jobId);
-      if (fresh.videoUrl != null) {
+      if (!mounted) return;
+      if (!fresh.mediaExpired && fresh.videoUrl != null) {
         await _initializePlayer(fresh.videoUrl);
       } else {
         if (mounted) setState(() => _hasError = true);
@@ -165,9 +174,16 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
 
     final val = _controller!.value;
 
-    if (val.hasError && !_retriedOnce) {
-      _retriedOnce = true;
-      _retryWithFreshUrl();
+    if (val.hasError) {
+      if (!_retriedOnce) {
+        _retriedOnce = true;
+        _retryWithFreshUrl();
+      } else if (!_hasError) {
+        setState(() {
+          _hasError = true;
+          _isInitialized = false;
+        });
+      }
       return;
     }
 
@@ -194,9 +210,7 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
 
     LearningQuestion? match;
     for (final q in _learningQuestions) {
-      if (q.isPausePredict &&
-          currentMs >= q.startMs &&
-          currentMs <= q.endMs) {
+      if (q.isPausePredict && currentMs >= q.startMs && currentMs <= q.endMs) {
         match = q;
         break;
       }
@@ -224,6 +238,7 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
         'kind': 'watch',
         'expectedVersion': _review!.version,
         'positionMs': positionMs,
+        if (completed) 'completed': true,
       },
     ).then((updated) {
       if (mounted) setState(() => _review = updated);
@@ -545,8 +560,7 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
           if (_currentPauseQuestion != null && !_showEndQuiz)
             PausePredictOverlay(
               question: _currentPauseQuestion!,
-              existingAnswer:
-                  _review?.answers[_currentPauseQuestion!.id],
+              existingAnswer: _review?.answers[_currentPauseQuestion!.id],
               showExplanation: _showPauseExplanation,
               onAnswerSelected: _handlePauseAnswer,
             ),
@@ -555,9 +569,8 @@ class VideoReelItemState extends ConsumerState<VideoReelItem>
           if (_showEndQuiz)
             Positioned.fill(
               child: EndQuizOverlay(
-                questions: _learningQuestions
-                    .where((q) => !q.isPausePredict)
-                    .toList(),
+                questions:
+                    _learningQuestions.where((q) => !q.isPausePredict).toList(),
                 takeaway: _takeaway,
                 onAnswer: _handleQuizAnswer,
                 onResetAnswers: _handleResetQuiz,
